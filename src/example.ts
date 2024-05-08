@@ -24,7 +24,6 @@ function createTimesTablesSheet(): Spreadsheet {
       {
         alignHorizontal: AlignHorizontal.Center,
         data: "My Cool Times Tables",
-        type: CellType.String,
         span: 11,
         bold: true,
         italic: true,
@@ -35,7 +34,7 @@ function createTimesTablesSheet(): Spreadsheet {
 
   const headerRow: Row = {
     cells: [
-      { data: "", type: CellType.String }
+      { data: "" }
     ]
   };
 
@@ -92,20 +91,20 @@ function createWorkbook(): Workbook {
         rows: [
           {
             cells: [
-              { data: "Column 1", bold: true, span: 2, alignHorizontal: AlignHorizontal.Center, type: CellType.String },
-              { data: "Column 2", bold: true, type: CellType.String },
+              { data: "Column 1", bold: true, span: 2, alignHorizontal: AlignHorizontal.Center },
+              { data: "Column 2", bold: true },
             ]
           },
           {
             cells: [
-              { data: "Row 1, Col 1", type: CellType.String },
-              { data: "Row 1, Col 2", type: CellType.String },
-              { data: "Row 1, Col 3", type: CellType.String },
+              { data: "Row 1, Col 1" },
+              { data: "Row 1, Col 2" },
+              { data: "Row 1, Col 3" },
             ]
           },
           {
             cells: [
-              { data: "I am across all the rows!", span: 3, alignHorizontal: AlignHorizontal.Right, type: CellType.String }
+              { data: "I am across all the rows!", span: 3, alignHorizontal: AlignHorizontal.Right }
             ]
           }
         ]
