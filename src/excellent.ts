@@ -3,11 +3,6 @@ export type Workbook = {
     author: string;
 }
 
-export enum CellStyle {
-    Normal,
-    Bold
-}
-
 export enum AlignHorizontal {
     Default,
     Left,
@@ -21,14 +16,17 @@ export enum CellType {
 }
 
 export type BaseCell = {
-    style?: CellStyle;
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
     span?: number;
     alignHorizontal?: AlignHorizontal,
 }
 
 export type Cell =
-    (BaseCell & { type: CellType.String, data: string }) |
-    (BaseCell & { type: CellType.Number, data: number })
+    (BaseCell & { type?: undefined, data: string }) |
+    (BaseCell & { type?: CellType.String, data: string }) |
+    (BaseCell & { type?: CellType.Number, data: number })
 
 export type Row = {
     cells: Cell[];
@@ -64,7 +62,7 @@ function generateFiles(workbook: Workbook): { [key: string]: string } {
     workbook.sheets
         .flatMap(sheet => sheet.rows)
         .flatMap(row => row.cells)
-        .filter(cell => cell.type === CellType.String)
+        .filter(cell => typeof (cell.type) === 'undefined' || cell.type === CellType.String)
         .map(cell => cell.data as string)
         .forEach(content => {
             if (!strings.includes(content)) {
@@ -76,16 +74,24 @@ function generateFiles(workbook: Workbook): { [key: string]: string } {
 
     const now = new Date().toISOString();
 
-    const normalFontIdx = "0";
-    const boldFontIdx = "1";
+    const fonts = [];
+    for (let bold of [false, true]) {
+        for (let italic of [false, true]) {
+            for (let underline of [false, true]) {
+                fonts.push(`<font>
+                    ${bold ? "<b />" : ""} ${italic ? "<i />" : ""} ${underline ? "<u />" : ""}
+                    <sz val="11" />
+                    <color theme="1" />
+                    <name val="Aptos Narrow" />
+                    <family val="2" />
+                    <scheme val="minor" />
+                </font>`)
+            }
+        }
+    }
+
     const cellXfs = [...styleMapping.keys()].map((key) => {
-
-        const [cellStyleStr, alignHorizontalStr] = key.split("-");
-
-        const cellStyle = parseInt(cellStyleStr) as CellStyle;
-        const alignHorizontal = parseInt(alignHorizontalStr) as AlignHorizontal;
-
-        const fontId = cellStyle === CellStyle.Bold ? boldFontIdx : normalFontIdx;
+        const [fontId, alignHorizontal] = key.split("-").map(x => parseInt(x));
         const applyAlignment = alignHorizontal !== AlignHorizontal.Default ? "1" : "0";
         let alignment = "";
 
@@ -105,12 +111,10 @@ function generateFiles(workbook: Workbook): { [key: string]: string } {
             alignment = `<alignment horizontal="${alignmentText}" />`;
         }
 
-        return `<xf numFmtId="0" fontId="${fontId}" fillId="0" borderId="0" xfId="0" applyFont="${fontId}" applyAlignment="${applyAlignment}">
+        return `<xf numFmtId="0" fontId="${fontId}" fillId="0" borderId="0" xfId="0" applyFont="${fontId === 0 ? '0' : '1'}" applyAlignment="${applyAlignment}">
             ${alignment}
         </xf>`;
     });
-
-    const cellXfsData = cellXfs.join("\n");
 
     const files: { [key: string]: string } = {
         "[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -190,22 +194,8 @@ function generateFiles(workbook: Workbook): { [key: string]: string } {
             xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
             xmlns:x16r2="http://schemas.microsoft.com/office/spreadsheetml/2015/02/main"
             xmlns:xr="http://schemas.microsoft.com/office/spreadsheetml/2014/revision">
-            <fonts count="2" x14ac:knownFonts="1">
-                <font>
-                    <sz val="11" />
-                    <color theme="1" />
-                    <name val="Aptos Narrow" />
-                    <family val="2" />
-                    <scheme val="minor" />
-                </font>
-                <font>
-                    <b />
-                    <sz val="11" />
-                    <color theme="1" />
-                    <name val="Aptos Narrow" />
-                    <family val="2" />
-                    <scheme val="minor" />
-                </font>
+            <fonts count="${fonts.length}" x14ac:knownFonts="1">
+                ${fonts.join("\n")}
             </fonts>
             <fills count="2">
                 <fill>
@@ -228,7 +218,7 @@ function generateFiles(workbook: Workbook): { [key: string]: string } {
                 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" />
             </cellStyleXfs>
             <cellXfs count="${cellXfs.length}">
-                ${cellXfsData}
+                ${cellXfs.join("\n")}
             </cellXfs>
             <cellStyles count="1">
                 <cellStyle name="Normal" xfId="0" builtinId="0" />
@@ -317,7 +307,7 @@ function generateFiles(workbook: Workbook): { [key: string]: string } {
                     .flatMap((cell) => {
                         const stringIdx = cell.type === CellType.String ? strings.indexOf(cell.data) : cell.data;
                         const cellRef = getRef(rowIdx, columnIdx);
-                        const cellStyle = getStyleId(styleMapping, cell.style, cell.alignHorizontal);
+                        const cellStyle = getStyleId(styleMapping, cell);
 
                         const cellSpan = getCellSpan(cell);
                         const cellType = cell.type === CellType.String ? `t="s"` : "";
@@ -392,18 +382,25 @@ function getStyleMapping(): Map<string, string> {
     const styles = new Map<string, string>();
     let index = 0;
 
-    for (let cellStyle of [CellStyle.Normal, CellStyle.Bold]) {
-        for (let alignHorizontal of [AlignHorizontal.Default, AlignHorizontal.Left, AlignHorizontal.Center, AlignHorizontal.Right]) {
-            styles.set(`${cellStyle}-${alignHorizontal}`, index.toString());
-            index++;
+    for (let bold of [0, 1]) {
+        for (let italic of [0, 1]) {
+            for (let underline of [0, 1]) {
+                const fontId = bold << 2 | italic << 1 | underline;
+                for (let alignHorizontal of [AlignHorizontal.Default, AlignHorizontal.Left, AlignHorizontal.Center, AlignHorizontal.Right]) {
+                    styles.set(`${fontId}-${alignHorizontal}`, index.toString());
+                    index++;
+                }
+            }
         }
     }
 
     return styles;
 }
 
-function getStyleId(mapping: Map<string, string>, cellStyle?: CellStyle, alignHorizontal?: AlignHorizontal): string {
-    const index = mapping.get(`${cellStyle ?? CellStyle.Normal}-${alignHorizontal ?? AlignHorizontal.Default}`);
+function getStyleId(mapping: Map<string, string>, cell: Cell): string {
+    const fontId = (cell.bold ? 1 : 0) << 2 | (cell.italic ? 1 : 0) << 1 | (cell.underline ? 1 : 0);
+    const alignHorizontal = cell.alignHorizontal ?? AlignHorizontal.Default;
+    const index = mapping.get(`${fontId}-${alignHorizontal}`);
     if (typeof index === 'undefined') throw "Could not find style";
     return index;
 }

@@ -1,4 +1,4 @@
-import { Workbook, downloadXlsx, CellStyle, AlignHorizontal, Spreadsheet, Row, CellType } from "./excellent.js"
+import { Workbook, downloadXlsx, AlignHorizontal, Spreadsheet, Row, CellType } from "./excellent.js"
 (() => {
   const downloadButton = document.getElementById("download") as HTMLButtonElement;
 
@@ -17,12 +17,6 @@ import { Workbook, downloadXlsx, CellStyle, AlignHorizontal, Spreadsheet, Row, C
   });
 })()
 
-function* range(stop: number) {
-  for (let i = 0; i < stop; i++) {
-    yield stop;
-  }
-}
-
 function createTimesTablesSheet(): Spreadsheet {
 
   const titleRow: Row = {
@@ -32,7 +26,9 @@ function createTimesTablesSheet(): Spreadsheet {
         data: "My Cool Times Tables",
         type: CellType.String,
         span: 11,
-        style: CellStyle.Bold
+        bold: true,
+        italic: true,
+        underline: true
       }
     ]
   };
@@ -47,7 +43,7 @@ function createTimesTablesSheet(): Spreadsheet {
     headerRow.cells.push({
       type: CellType.Number,
       data: x,
-      style: CellStyle.Bold
+      bold: true
     });
   }
 
@@ -58,7 +54,7 @@ function createTimesTablesSheet(): Spreadsheet {
       cells: [
         {
           data: y,
-          style: CellStyle.Bold,
+          bold: true,
           type: CellType.Number
         }
       ]
@@ -96,8 +92,8 @@ function createWorkbook(): Workbook {
         rows: [
           {
             cells: [
-              { data: "Column 1", style: CellStyle.Bold, span: 2, alignHorizontal: AlignHorizontal.Center, type: CellType.String },
-              { data: "Column 2", style: CellStyle.Bold, type: CellType.String },
+              { data: "Column 1", bold: true, span: 2, alignHorizontal: AlignHorizontal.Center, type: CellType.String },
+              { data: "Column 2", bold: true, type: CellType.String },
             ]
           },
           {
