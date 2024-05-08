@@ -24,8 +24,7 @@ export type BaseCell = {
 }
 
 export type Cell =
-    (BaseCell & { type?: undefined, data: string }) |
-    (BaseCell & { type?: CellType.String, data: string }) |
+    (BaseCell & { type?: CellType.String | undefined, data: string }) |
     (BaseCell & { type?: CellType.Number, data: number })
 
 export type Row = {
