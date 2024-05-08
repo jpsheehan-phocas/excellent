@@ -62,8 +62,8 @@ function generateFiles(workbook: Workbook): { [key: string]: string } {
     workbook.sheets
         .flatMap(sheet => sheet.rows)
         .flatMap(row => row.cells)
-        .filter(cell => typeof (cell.type) === 'undefined' || cell.type === CellType.String)
-        .map(cell => cell.data as string)
+        .filter(isString)
+        .map(cell => cell.data.toString())
         .forEach(content => {
             if (!strings.includes(content)) {
                 strings.push(content);
@@ -305,12 +305,12 @@ function generateFiles(workbook: Workbook): { [key: string]: string } {
                 let columnIdx = 0;
                 const cellData = row.cells
                     .flatMap((cell) => {
-                        const stringIdx = cell.type === CellType.String ? strings.indexOf(cell.data) : cell.data;
+                        const stringIdx = isString(cell) ? strings.indexOf(cell.data.toString()) : cell.data;
                         const cellRef = getRef(rowIdx, columnIdx);
                         const cellStyle = getStyleId(styleMapping, cell);
 
                         const cellSpan = getCellSpan(cell);
-                        const cellType = cell.type === CellType.String ? `t="s"` : "";
+                        const cellType = isString(cell) ? `t="s"` : "";
                         const cells = [`<c r="${cellRef}" s="${cellStyle}" ${cellType}><v>${stringIdx}</v></c>`];
                         columnIdx++;
 
@@ -366,6 +366,10 @@ function generateFiles(workbook: Workbook): { [key: string]: string } {
     });
 
     return files;
+}
+
+function isString(cell: Cell): boolean {
+    return typeof(cell.type) === 'undefined'|| cell.type === CellType.String;
 }
 
 function getRef(rowIdx: number, columnIdx: number): string {
